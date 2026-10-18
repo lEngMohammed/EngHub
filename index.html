@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<!--
+  EngHub — جميع الحقوق محفوظة © ENG.MOHAMMED.
+  يُمنع نسخ التصميم أو الشيفرة أو إعادة نشرهما دون إذن كتابي.
+-->
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EngHub | منصة مهندسي الحاسب والشبكات</title>
+<meta name="description" content="EngHub: مجتمع وأدوات لمهندسي الحاسب والشبكات. حاسبة Subnet/CIDR، زمن نقل الملفات، مرجع المنافذ، وطرفية محاكاة.">
+<meta name="author" content="ENG.MOHAMMED">
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#050a12">
+<meta property="og:type" content="website">
+<meta property="og:title" content="EngHub | منصة مهندسي الحاسب والشبكات">
+<meta property="og:description" content="أدوات شبكات تفاعلية ومجتمع للمهندسين في صفحة واحدة.">
+<meta property="og:locale" content="ar_AR">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2322d3ee'/%3E%3Ctext x='16' y='22' font-size='16' text-anchor='middle' font-family='monospace' font-weight='700' fill='%2303121c'%3E%3E_%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>
+tailwind.config = { theme: { extend: {
+  fontFamily: { sans: ['Cairo','Tajawal','sans-serif'], mono: ['JetBrains Mono','monospace'] },
+  colors: { ink:'#050a12', panel:'#0b1424', edge:'#16263f', neon:'#22d3ee', cyber:'#34f5a0' }
+}}};
+</script>
+<style>
+  html { scroll-behavior: smooth; }
+  body { background:#050a12; color:#d6e2f2; font-family:'Cairo',sans-serif; }
+  body::before { content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
+    background:
+      radial-gradient(600px 400px at 85% -5%, rgba(34,211,238,.16), transparent 70%),
+      radial-gradient(500px 400px at 5% 40%, rgba(52,245,160,.09), transparent 70%),
+      linear-gradient(rgba(34,211,238,.04) 1px, transparent 1px) 0 0/48px 48px,
+      linear-gradient(90deg, rgba(34,211,238,.04) 1px, transparent 1px) 0 0/48px 48px; }
+  .grad-text { background:linear-gradient(90deg,#22d3ee,#34f5a0); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .btn { position:relative; overflow:hidden; transition:transform .15s, box-shadow .25s, background .25s; cursor:pointer; }
+  .btn:active { transform:scale(.96); }
+  .btn-primary { background:linear-gradient(90deg,#22d3ee,#34f5a0); color:#03121c; font-weight:800; }
+  .btn-primary:hover { box-shadow:0 0 24px rgba(34,211,238,.45); }
+  .btn-ghost { border:1px solid #1d3354; color:#bcd0ea; }
+  .btn-ghost:hover { border-color:#22d3ee; color:#22d3ee; }
+  .ripple { position:absolute; border-radius:50%; background:rgba(255,255,255,.45); transform:scale(0); animation:rip .6s ease-out forwards; pointer-events:none; }
+  @keyframes rip { to { transform:scale(4); opacity:0; } }
+  .card { background:linear-gradient(180deg,rgba(15,28,48,.92),rgba(9,17,31,.92)); border:1px solid #16263f; border-radius:14px; }
+  .field { background:#07101d; border:1px solid #1a2c49; border-radius:10px; padding:.6rem .8rem; width:100%; color:#e6f0ff; outline:none; transition:border .2s, box-shadow .2s; }
+  .field:focus { border-color:#22d3ee; box-shadow:0 0 0 3px rgba(34,211,238,.15); }
+  :focus-visible { outline:2px solid #22d3ee; outline-offset:2px; }
+  .post-in { animation:postIn .5s cubic-bezier(.2,.8,.2,1); }
+  @keyframes postIn { from { opacity:0; transform:translateY(-14px) scale(.98); } to { opacity:1; transform:none; } }
+  .toast { animation:toastIn .35s ease-out; }
+  @keyframes toastIn { from { opacity:0; transform:translateX(-20px); } to { opacity:1; transform:none; } }
+  .pulse-dot { width:8px; height:8px; border-radius:50%; background:#34f5a0; box-shadow:0 0 0 0 rgba(52,245,160,.6); animation:pd 1.8s infinite; }
+  @keyframes pd { 70% { box-shadow:0 0 0 9px rgba(52,245,160,0); } 100% { box-shadow:0 0 0 0 rgba(52,245,160,0); } }
+  .term { direction:ltr; text-align:left; font-family:'JetBrains Mono',monospace; background:#02060c; border:1px solid #16263f; border-radius:12px; }
+  .term-body { height:300px; overflow-y:auto; padding:14px; font-size:13px; line-height:1.7; white-space:pre-wrap; }
+  .term input { background:transparent; border:0; outline:0; color:#34f5a0; flex:1; font:inherit; }
+  .ltr { direction:ltr; unicode-bidi:plaintext; }
+  th, td { padding:.6rem .9rem; text-align:right; }
+  tbody tr { border-top:1px solid #12223a; transition:background .2s; }
+  tbody tr:hover { background:rgba(34,211,238,.06); }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration:.01ms !important; transition-duration:.01ms !important; scroll-behavior:auto !important; } }
+  dialog::backdrop { background:rgba(0,0,0,.75); backdrop-filter:blur(3px); }
+  dialog { color:#d6e2f2; }
+  .skip { position:absolute; top:-60px; right:10px; z-index:100; background:#22d3ee; color:#03121c; padding:.5rem 1rem; border-radius:8px; }
+  .skip:focus { top:10px; }
+</style>
+</head>
+<body class="font-sans antialiased">
+<a class="skip" href="#top">تخطَّ إلى المحتوى</a>
+<noscript><p style="padding:1rem;text-align:center;background:#7f1d1d;color:#fff">يتطلب EngHub تفعيل JavaScript ليعمل.</p></noscript>
+
+<!-- Navbar -->
+<header class="sticky top-0 z-40 backdrop-blur-md bg-ink/80 border-b border-edge">
+  <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+    <a href="#top" class="flex items-center gap-2 font-extrabold text-xl">
+      <span class="grid place-items-center w-9 h-9 rounded-lg bg-gradient-to-br from-neon to-cyber text-ink font-mono text-sm">&gt;_</span>
+      <span class="grad-text">EngHub</span>
+    </a>
+    <nav class="hidden md:flex items-center gap-1 text-sm">
+      <a class="px-3 py-2 rounded-lg hover:text-neon" href="#community">المجتمع</a>
+      <a class="px-3 py-2 rounded-lg hover:text-neon" href="#tools">الأدوات</a>
+      <a class="px-3 py-2 rounded-lg hover:text-neon" href="#ports">المنافذ</a>
+      <a class="px-3 py-2 rounded-lg hover:text-neon" href="#console">الطرفية</a>
+    </nav>
+    <a href="#community" class="flex items-center gap-2 text-sm card px-3 py-1.5" title="عدد المشاركات في المجتمع">
+      <span class="pulse-dot"></span>
+      <span id="liveCount" class="font-mono font-semibold text-cyber">0</span>
+      <span class="text-slate-400">مشاركة</span>
+    </a>
+  </div>
+</header>
+
+<main id="top">
+<!-- Hero -->
+<section class="max-w-6xl mx-auto px-4 pt-16 pb-20 grid lg:grid-cols-2 gap-10 items-center">
+  <div>
+    <h1 class="text-4xl md:text-6xl font-extrabold leading-tight">مكان واحد <span class="grad-text">لكل مهندس</span> حاسب وشبكات</h1>
+    <p class="mt-5 text-slate-300 text-lg max-w-xl leading-8">شارك حلولك البرمجية والشبكية، احسب الشبكات الفرعية في ثوانٍ، وجرّب أوامر الطرفية مباشرة من المتصفح. كل ما تحتاجه في يوم عمل هندسي، في صفحة واحدة.</p>
+    <div class="mt-8 flex flex-wrap gap-3">
+      <button class="btn btn-primary rounded-xl px-7 py-3" data-scroll="#tools" data-toast="اخترنا لك الأدوات، ابدأ بحاسبة Subnet">استكشف الأداة الآن</button>
+      <button class="btn btn-ghost rounded-xl px-7 py-3" data-scroll="#community">انضم إلى المجتمع</button>
+    </div>
+  </div>
+  <div class="term shadow-[0_0_60px_rgba(34,211,238,.12)]" aria-hidden="true">
+    <div class="flex gap-1.5 p-3 border-b border-edge"><i class="w-3 h-3 rounded-full bg-red-400/80"></i><i class="w-3 h-3 rounded-full bg-yellow-400/80"></i><i class="w-3 h-3 rounded-full bg-cyber/80"></i></div>
+    <pre id="heroTerm" class="p-4 text-[13px] leading-7 min-h-[230px] text-cyber"></pre>
+  </div>
+</section>
+
+<!-- Community -->
+<section id="community" class="max-w-6xl mx-auto px-4 py-14">
+  <h2 class="text-3xl font-extrabold mb-2">مشاركات المجتمع</h2>
+  <p class="text-slate-400 mb-8">أضف فكرة أو حلاً، وسيراه المهندسون فوراً.</p>
+  <div class="grid lg:grid-cols-5 gap-6">
+    <form id="postForm" class="card p-5 lg:col-span-2 h-fit space-y-3">
+      <input id="pName" class="field" placeholder="اسمك" maxlength="30" required>
+      <select id="pType" class="field">
+        <option>فكرة</option><option>حل برمجي</option><option>حل شبكي</option><option>سؤال</option>
+      </select>
+      <textarea id="pText" class="field min-h-[130px]" placeholder="اكتب فكرتك أو الحل (يمكنك لصق كود)" maxlength="600" required></textarea>
+      <button class="btn btn-primary rounded-xl px-5 py-2.5 w-full" type="submit">انشر في المجتمع</button>
+    </form>
+    <div id="feed" class="lg:col-span-3 space-y-4"></div>
+  </div>
+</section>
+
+<!-- Tools -->
+<section id="tools" class="max-w-6xl mx-auto px-4 py-14">
+  <h2 class="text-3xl font-extrabold mb-8">الأدوات التفاعلية</h2>
+  <div class="grid lg:grid-cols-2 gap-6">
+    <div class="card p-6">
+      <h3 class="text-xl font-bold mb-1 text-neon">حاسبة Subnet / CIDR</h3>
+      <p class="text-sm text-slate-400 mb-4">اكتب <span class="font-mono">192.168.1.10/24</span> أو <span class="font-mono">10.0.0.5 255.255.0.0</span></p>
+      <input id="subIn" class="field font-mono ltr" value="192.168.1.10/26" placeholder="192.168.1.10/24" aria-label="عنوان IP مع CIDR أو قناع">
+      <div id="subOut" class="mt-4 grid grid-cols-2 gap-2 text-sm"></div>
+      <button class="btn btn-ghost rounded-lg px-4 py-2 mt-4 text-sm" id="copySub">نسخ النتائج</button>
+    </div>
+    <div class="card p-6">
+      <h3 class="text-xl font-bold mb-1 text-cyber">حاسبة زمن نقل الملفات</h3>
+      <p class="text-sm text-slate-400 mb-4">احسب كم يستغرق نقل ملف عبر سرعة اتصال معينة.</p>
+      <div class="grid grid-cols-3 gap-2 mb-2">
+        <input id="fSize" type="number" min="0" step="any" value="4.7" class="field col-span-2 ltr" aria-label="حجم الملف">
+        <select id="fUnit" class="field"><option value="1e3">KB</option><option value="1e6" selected>MB</option><option value="1e9">GB</option><option value="1e12">TB</option></select>
+        <input id="sSpeed" type="number" min="0" step="any" value="100" class="field col-span-2 ltr" aria-label="سرعة الإنترنت">
+        <select id="sUnit" class="field"><option value="1e3">Kbps</option><option value="1e6" selected>Mbps</option><option value="1e9">Gbps</option></select>
+      </div>
+      <label class="flex items-center gap-2 text-sm text-slate-400 mt-2"><input type="checkbox" id="ovh" checked> احتساب 10% كحمل بروتوكولي (Overhead)</label>
+      <div id="xferOut" class="mt-4 card p-4 text-center">
+        <div class="text-slate-400 text-sm">الزمن المتوقع</div>
+        <div id="xferTime" class="text-3xl font-extrabold grad-text mt-1">—</div>
+        <div id="xferSec" class="text-xs font-mono text-slate-500 mt-1"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Ports -->
+<section id="ports" class="max-w-6xl mx-auto px-4 py-14">
+  <div class="flex flex-wrap items-end justify-between gap-4 mb-6">
+    <div><h2 class="text-3xl font-extrabold">مرجع البروتوكولات والمنافذ</h2><p class="text-slate-400 mt-1">ابحث بالاسم أو الرقم أو الوصف.</p></div>
+    <input id="portQ" class="field max-w-xs" placeholder="ابحث: ssh أو 443 ..." aria-label="بحث في المنافذ">
+  </div>
+  <div class="card overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="text-slate-400"><tr><th>المنفذ</th><th>البروتوكول</th><th>النقل</th><th>الوصف</th><th></th></tr></thead>
+      <tbody id="portBody"></tbody>
+    </table>
+    <p id="portEmpty" class="hidden p-6 text-center text-slate-400">لا توجد نتائج. جرّب كلمة أخرى مثل dns أو 22.</p>
+  </div>
+</section>
+
+<!-- Console -->
+<section id="console" class="max-w-6xl mx-auto px-4 py-14">
+  <h2 class="text-3xl font-extrabold mb-2">لوحة المحاكاة (Sandbox)</h2>
+  <p class="text-slate-400 mb-6">محاكاة آمنة داخل المتصفح. اكتب <span class="font-mono text-neon">help</span> لعرض الأوامر.</p>
+  <div class="term" id="termBox">
+    <div class="flex items-center justify-between p-3 border-b border-edge text-xs text-slate-400">
+      <span>enghub@sandbox: ~</span>
+      <button class="btn btn-ghost rounded px-2 py-1" id="clearTerm">مسح</button>
+    </div>
+    <div id="termOut" class="term-body" aria-live="polite"></div>
+    <div class="flex items-center gap-2 px-4 py-3 border-t border-edge">
+      <span class="text-neon">$</span>
+      <input id="termIn" autocomplete="off" spellcheck="false" aria-label="سطر الأوامر" placeholder="ping google.com">
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="border-t border-edge py-10 mt-6">
+  <div class="max-w-6xl mx-auto px-4 flex flex-wrap items-center justify-between gap-4 text-sm text-slate-400">
+    <p>© <span data-year></span> <strong class="text-slate-200" data-owner></strong>. جميع الحقوق محفوظة. EngHub™</p>
+    <nav class="flex flex-wrap gap-4" aria-label="روابط قانونية">
+      <button data-legal="terms" class="hover:text-neon">شروط الاستخدام</button>
+      <button data-legal="privacy" class="hover:text-neon">الخصوصية</button>
+      <button data-legal="copyright" class="hover:text-neon">حقوق النشر</button>
+      <a data-email class="hover:text-neon" href="#"></a>
+    </nav>
+  </div>
+</footer>
+
+<dialog id="legal" class="card w-[min(92vw,640px)] max-h-[85vh] p-0 m-auto">
+  <div class="flex items-center justify-between border-b border-edge px-5 py-3">
+    <div class="flex gap-4 text-sm font-semibold">
+      <button data-tab="terms">الشروط</button><button data-tab="privacy">الخصوصية</button><button data-tab="copyright">الحقوق</button>
+    </div>
+    <button id="closeLegal" class="btn btn-ghost rounded px-3 py-1 text-sm">إغلاق</button>
+  </div>
+  <div class="p-5 text-sm leading-8 overflow-y-auto max-h-[65vh]">
+    <div data-pane="terms">
+      <h3 class="font-bold text-lg mb-2">شروط الاستخدام</h3>
+      <p>باستخدامك EngHub فإنك توافق على هذه الشروط. الأدوات (حاسبة Subnet، زمن النقل، مرجع المنافذ) مقدَّمة لأغراض تعليمية ومساعدة، وقد تختلف النتائج عن الواقع العملي، فتحقق منها قبل اعتمادها في بيئات إنتاج.</p>
+      <p class="mt-2">لوحة الطرفية محاكاة داخل المتصفح ولا تنفّذ أوامر حقيقية ولا تتصل بأي خادم.</p>
+      <p class="mt-2">عند النشر في المجتمع تتعهد بعدم نشر محتوى مسيء أو مخالف للقانون أو ينتهك حقوق الآخرين أو يتضمن معلومات خاصة أو بيانات اعتماد. يحق للمالك إزالة أي محتوى مخالف.</p>
+      <p class="mt-2">يُقدَّم الموقع «كما هو» دون ضمانات، ولا يتحمل المالك مسؤولية أي خسارة ناتجة عن استخدامه.</p>
+    </div>
+    <div data-pane="privacy" class="hidden">
+      <h3 class="font-bold text-lg mb-2">سياسة الخصوصية</h3>
+      <p>لا يرسل هذا الموقع بياناتك إلى أي خادم. المشاركات والتعليقات والإعجابات تُحفظ في التخزين المحلي (localStorage) لمتصفحك على جهازك فقط، ويمكنك حذفها بحذف مشاركاتك أو مسح بيانات الموقع من المتصفح.</p>
+      <p class="mt-2">لا نستخدم ملفات تتبع أو إعلانات. يحمّل الموقع خط Cairo من Google Fonts ومكتبة Tailwind من شبكة CDN، وقد تسجّل هذه الجهات عنوان IP وفق سياساتها الخاصة.</p>
+      <p class="mt-2">للاستفسار أو طلب أي إجراء يخص خصوصيتك راسلنا على البريد المذكور أسفل الصفحة.</p>
+    </div>
+    <div data-pane="copyright" class="hidden">
+      <h3 class="font-bold text-lg mb-2">حقوق النشر والملكية</h3>
+      <p>© <span data-year></span> <strong data-owner></strong>. جميع الحقوق محفوظة. اسم EngHub وشعاره وتصميم الموقع وشيفرته ونصوصه ملكية حصرية لمالك الموقع.</p>
+      <p class="mt-2">لا يجوز نسخ أو تعديل أو إعادة نشر أو بيع أي جزء من التصميم أو الشيفرة أو المحتوى الأصلي دون إذن كتابي مسبق.</p>
+      <p class="mt-2">المحتوى الذي ينشره المستخدمون يبقى ملكاً لأصحابه، وهم المسؤولون عنه. للإبلاغ عن انتهاك لحقوقك راسلنا عبر البريد المذكور.</p>
+    </div>
+  </div>
+</dialog>
+
+<div id="notice" class="hidden fixed bottom-5 right-5 z-50 card p-4 max-w-sm text-sm flex items-center gap-3">
+  <span>يحفظ الموقع مشاركاتك على جهازك فقط (تخزين محلي) ولا يتتبّعك.</span>
+  <button id="noticeOk" class="btn btn-primary rounded-lg px-4 py-1.5 shrink-0">حسناً</button>
+</div>
+
+<div id="toasts" class="fixed bottom-5 left-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+<script>
+/* ===== إعدادات المالك: عدّلها هنا فقط ===== */
+const CONFIG = { owner: 'ENG.MOHAMMED', email: 'mohammed.dgrii@gmail.com', year: new Date().getFullYear() };
+const $ = (s, r=document) => r.querySelector(s);
+const esc = s => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- Toasts ---------- */
+function toast(msg, type='ok') {
+  const t = document.createElement('div');
+  t.className = 'toast card pointer-events-auto px-4 py-3 text-sm flex items-center gap-2 border-l-4 ' + (type==='err' ? 'border-red-400' : 'border-cyber');
+  t.innerHTML = `<span>${type==='err' ? '⚠️' : '✅'}</span><span>${esc(msg)}</span>`;
+  $('#toasts').appendChild(t);
+  setTimeout(() => { t.style.transition='opacity .4s'; t.style.opacity=0; setTimeout(()=>t.remove(), 400); }, 3000);
+}
+
+/* ---------- Ripple + generic data attributes ---------- */
+document.addEventListener('click', e => {
+  const b = e.target.closest('.btn'); if (!b) return;
+  const r = b.getBoundingClientRect(), d = Math.max(r.width, r.height);
+  const s = document.createElement('span'); s.className = 'ripple';
+  s.style.cssText = `width:${d}px;height:${d}px;left:${e.clientX-r.left-d/2}px;top:${e.clientY-r.top-d/2}px`;
+  b.appendChild(s); setTimeout(() => s.remove(), 650);
+  if (b.dataset.scroll) $(b.dataset.scroll).scrollIntoView({behavior:'smooth'});
+  if (b.dataset.toast) toast(b.dataset.toast);
+});
+
+/* ---------- Community counter ---------- */
+const lc = $('#liveCount');
+
+/* ---------- Hero typing ---------- */
+const heroLines = ['$ ping -c 2 enghub.dev','64 bytes from 10.0.0.1: time=12ms','64 bytes from 10.0.0.1: time=11ms','','$ subnet 192.168.1.0/24','hosts: 254  broadcast: 192.168.1.255','','$ python -c "print(2**10)"','1024'];
+(function typeHero(){
+  const el = $('#heroTerm'); let l = 0, c = 0, out = '';
+  (function tick(){
+    if (l >= heroLines.length) return;
+    const line = heroLines[l];
+    if (c < line.length) { out += line[c++]; el.textContent = out + '▌'; setTimeout(tick, line.startsWith('$') ? 45 : 8); }
+    else { out += '\n'; l++; c = 0; el.textContent = out + '▌'; setTimeout(tick, 220); }
+  })();
+})();
+
+/* ---------- Community feed ---------- */
+const SEEDS = [
+  {name:'م. سارة', type:'حل شبكي', text:'لتقليل ضياع العناوين في VLAN صغيرة استخدمت VLSM: /30 للروابط بين الراوترات و/26 لقسم المبيعات. وفّر لنا نصف النطاق تقريباً.', likes:42, comments:['فكرة ممتازة، جربتها وفعالة.'], liked:false},
+  {name:'م. خالد', type:'حل برمجي', text:'for ip in range(1, 255): ... استخدم asyncio مع socket لفحص المنافذ بسرعة بدل الحلقات المتتابعة.', likes:27, comments:[], liked:false},
+  {name:'م. ليلى', type:'فكرة', text:'ما رأيكم ببناء لوحة مراقبة منزلية بـ Raspberry Pi تعرض زمن الاستجابة وفقد الحزم لكل جهاز؟', likes:19, comments:[], liked:false}
+].map(p => ({...p, sample:true}));
+const KEY = 'enghub_posts_v1'; let posts = null, lastPost = 0;
+try { posts = JSON.parse(localStorage.getItem(KEY)); } catch {}
+if (!Array.isArray(posts)) posts = SEEDS;
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(posts)); } catch {} };
+const updateCount = () => { lc.textContent = posts.length.toLocaleString('en'); };
+function burst(x, y) {
+  const colors = ['#22d3ee','#34f5a0','#ffffff'];
+  for (let i = 0; i < 16; i++) {
+    const p = document.createElement('span'), a = (Math.PI*2*i)/16 + Math.random()*.4, dist = 30 + Math.random()*40;
+    p.style.cssText = `position:fixed;left:${x}px;top:${y}px;width:6px;height:6px;border-radius:50%;background:${colors[i%3]};pointer-events:none;z-index:60`;
+    document.body.appendChild(p);
+    p.animate([{transform:'translate(0,0) scale(1)',opacity:1},{transform:`translate(${Math.cos(a)*dist}px,${Math.sin(a)*dist}px) scale(.2)`,opacity:0}],{duration:650,easing:'ease-out'}).onfinish = () => p.remove();
+  }
+}
+function renderPost(p, i, animate) {
+  const el = document.createElement('article');
+  el.className = 'card p-5' + (animate ? ' post-in' : '');
+  const initial = esc(p.name.trim().charAt(0) || '؟');
+  el.innerHTML = `
+    <div class="flex items-center gap-3 mb-3">
+      <span class="grid place-items-center w-10 h-10 rounded-full bg-gradient-to-br from-neon to-cyber text-ink font-extrabold">${initial}</span>
+      <div><div class="font-semibold">${esc(p.name)} ${p.sample ? '<span class="text-[10px] border border-edge rounded px-1.5 text-slate-400 align-middle">مثال توضيحي</span>' : ''}</div><div class="text-xs text-neon">${esc(p.type)}</div></div>
+    </div>
+    <p class="leading-8 text-slate-200 whitespace-pre-wrap break-words">${esc(p.text)}</p>
+    <div class="flex items-center gap-2 mt-4">
+      <button class="btn btn-ghost rounded-lg px-3 py-1.5 text-sm like" aria-pressed="${p.liked}">
+        <span class="heart">${p.liked ? '❤️' : '🤍'}</span> <span class="cnt font-mono">${p.likes}</span>
+      </button>
+      <button class="btn btn-ghost rounded-lg px-3 py-1.5 text-sm tg">💬 تعليق <span class="font-mono">(${p.comments.length})</span></button>
+      ${p.mine ? '<button class="btn btn-ghost rounded-lg px-3 py-1.5 text-sm del text-red-300">حذف</button>' : ''}
+    </div>
+    <div class="cm hidden mt-4 space-y-2">
+      <div class="list space-y-2"></div>
+      <div class="flex gap-2"><input class="field text-sm" placeholder="اكتب تعليقاً" maxlength="200"><button class="btn btn-primary rounded-lg px-4 text-sm send">إرسال</button></div>
+    </div>`;
+  const list = $('.list', el);
+  const addC = t => { const d = document.createElement('div'); d.className = 'text-sm bg-ink/60 border border-edge rounded-lg px-3 py-2 post-in'; d.textContent = t; list.appendChild(d); };
+  p.comments.forEach(addC);
+  $('.like', el).addEventListener('click', e => {
+    p.liked = !p.liked; p.likes += p.liked ? 1 : -1; save();
+    $('.cnt', el).textContent = p.likes; $('.heart', el).textContent = p.liked ? '❤️' : '🤍';
+    e.currentTarget.setAttribute('aria-pressed', p.liked);
+    if (p.liked) { const r = $('.heart', el).getBoundingClientRect(); burst(r.left + r.width/2, r.top + r.height/2); toast('أعجبك المنشور'); }
+  });
+  $('.tg', el).addEventListener('click', () => $('.cm', el).classList.toggle('hidden'));
+  const del = $('.del', el);
+  if (del) del.addEventListener('click', () => { posts.splice(posts.indexOf(p), 1); save(); updateCount(); el.remove(); toast('تم حذف مشاركتك'); });
+  const input = $('.cm input', el);
+  const send = () => {
+    const v = input.value.trim();
+    if (!v) return toast('اكتب نص التعليق أولاً', 'err');
+    p.comments.push(v); save(); addC(v); input.value = '';
+    $('.tg span', el).textContent = `(${p.comments.length})`; toast('تمت إضافة تعليقك');
+  };
+  $('.send', el).addEventListener('click', send);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+  return el;
+}
+posts.forEach((p, i) => $('#feed').appendChild(renderPost(p, i, false)));
+updateCount();
+$('#postForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const name = $('#pName').value.trim(), text = $('#pText').value.trim();
+  if (!name || !text) return toast('الاسم والنص مطلوبان', 'err');
+  if (Date.now() - lastPost < 15000) return toast('انتظر ثوانٍ قبل نشر مشاركة أخرى', 'err');
+  lastPost = Date.now();
+  const p = {name, type:$('#pType').value, text, likes:0, comments:[], liked:false, mine:true};
+  posts.unshift(p); save(); updateCount(); $('#feed').prepend(renderPost(p, 0, true));
+  $('#pText').value = ''; toast('تم إرسال فكرتك للمجتمع');
+});
+
+/* ---------- Subnet calculator ---------- */
+const ip2n = s => { const p = s.split('.'); if (p.length !== 4 || p.some(x => !/^\d{1,3}$/.test(x) || +x > 255)) return null; return (((+p[0]<<24)>>>0) + (+p[1]<<16) + (+p[2]<<8) + +p[3]) >>> 0; };
+const n2ip = n => [n>>>24, (n>>>16)&255, (n>>>8)&255, n&255].join('.');
+function parseSubnet(v) {
+  v = v.trim().replace(/\s+/g, ' ');
+  let ip, cidr;
+  if (v.includes('/')) { const [a, b] = v.split('/'); ip = ip2n(a); cidr = /^\d+$/.test(b) ? +b : NaN; }
+  else if (v.includes(' ')) {
+    const [a, m] = v.split(' '); ip = ip2n(a); const mn = ip2n(m);
+    if (mn === null) return null;
+    const bin = mn.toString(2).padStart(32, '0'); if (!/^1*0*$/.test(bin)) return {err:'القناع غير صالح (يجب أن تكون الوحدات متتالية)'};
+    cidr = bin.indexOf('0') === -1 ? 32 : bin.indexOf('0');
+  } else return null;
+  if (ip === null || isNaN(cidr) || cidr < 0 || cidr > 32) return null;
+  return {ip, cidr};
+}
+let lastSub = '';
+function calcSubnet() {
+  const out = $('#subOut'), r = parseSubnet($('#subIn').value);
+  if (!r || r.err) { out.innerHTML = `<div class="col-span-2 text-red-300">${r && r.err ? r.err : 'صيغة غير صحيحة. مثال: 192.168.1.10/24'}</div>`; lastSub = ''; return; }
+  const mask = r.cidr === 0 ? 0 : (0xFFFFFFFF << (32 - r.cidr)) >>> 0, wild = (~mask) >>> 0;
+  const net = (r.ip & mask) >>> 0, bc = (net | wild) >>> 0, total = 2 ** (32 - r.cidr);
+  const hosts = r.cidr >= 31 ? (r.cidr === 31 ? 2 : 1) : total - 2;
+  const first = r.cidr >= 31 ? net : net + 1, last = r.cidr >= 31 ? bc : bc - 1;
+  const rows = [['Network ID', n2ip(net)], ['Broadcast', n2ip(bc)], ['Subnet Mask', n2ip(mask)], ['Wildcard', n2ip(wild)], ['أول عنوان متاح', n2ip(first)], ['آخر عنوان متاح', n2ip(last)], ['عدد العناوين المتاحة', hosts.toLocaleString('en')], ['CIDR', '/' + r.cidr]];
+  out.innerHTML = rows.map(([k, v]) => `<div class="bg-ink/60 border border-edge rounded-lg p-3"><div class="text-xs text-slate-400">${k}</div><div class="font-mono ltr text-cyber">${v}</div></div>`).join('');
+  lastSub = rows.map(([k, v]) => `${k}: ${v}`).join('\n');
+}
+$('#subIn').addEventListener('input', calcSubnet); calcSubnet();
+$('#copySub').addEventListener('click', async () => {
+  if (!lastSub) return toast('لا توجد نتائج صالحة للنسخ', 'err');
+  try { await navigator.clipboard.writeText(lastSub); toast('تم نسخ النتائج بنجاح'); } catch { toast('تعذر النسخ، انسخ يدوياً', 'err'); }
+});
+
+/* ---------- Transfer time ---------- */
+function fmtDur(s) {
+  if (!isFinite(s) || s <= 0) return '—';
+  if (s < 1) return (s * 1000).toFixed(0) + ' ملّي ثانية';
+  const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60), sec = Math.round(s % 60);
+  return [d && d + ' يوم', h && h + ' ساعة', m && m + ' دقيقة', (sec || (!d && !h && !m)) && sec + ' ثانية'].filter(Boolean).join(' و ');
+}
+function calcXfer() {
+  const bits = +$('#fSize').value * +$('#fUnit').value * 8 * ($('#ovh').checked ? 1.1 : 1);
+  const bps = +$('#sSpeed').value * +$('#sUnit').value, s = bits / bps;
+  $('#xferTime').textContent = fmtDur(s);
+  $('#xferSec').textContent = isFinite(s) && s > 0 ? s.toFixed(2) + ' s' : 'أدخل قيماً أكبر من الصفر';
+}
+['fSize','fUnit','sSpeed','sUnit','ovh'].forEach(id => $('#' + id).addEventListener('input', calcXfer)); calcXfer();
+
+/* ---------- Ports ---------- */
+const ports = [
+  [20,'FTP Data','TCP','نقل بيانات FTP'],[21,'FTP','TCP','التحكم في نقل الملفات'],[22,'SSH','TCP','اتصال آمن وإدارة عن بعد'],[23,'Telnet','TCP','إدارة عن بعد غير مشفرة'],
+  [25,'SMTP','TCP','إرسال البريد'],[53,'DNS','TCP/UDP','تحويل الأسماء إلى عناوين'],[67,'DHCP Server','UDP','توزيع عناوين IP تلقائياً'],[68,'DHCP Client','UDP','عميل DHCP'],
+  [69,'TFTP','UDP','نقل ملفات بسيط'],[80,'HTTP','TCP','تصفح الويب'],[110,'POP3','TCP','استقبال البريد'],[123,'NTP','UDP','مزامنة الوقت'],
+  [143,'IMAP','TCP','قراءة البريد من الخادم'],[161,'SNMP','UDP','مراقبة الأجهزة'],[389,'LDAP','TCP','خدمات الدليل'],[443,'HTTPS','TCP','ويب مشفر عبر TLS'],
+  [445,'SMB','TCP','مشاركة ملفات ويندوز'],[514,'Syslog','UDP','تجميع السجلات'],[587,'SMTP (Submission)','TCP','إرسال بريد مصادَق'],[993,'IMAPS','TCP','IMAP مشفر'],
+  [1433,'MS SQL','TCP','قاعدة بيانات SQL Server'],[3306,'MySQL','TCP','قاعدة بيانات MySQL'],[3389,'RDP','TCP','سطح المكتب البعيد'],[5432,'PostgreSQL','TCP','قاعدة بيانات PostgreSQL'],
+  [6379,'Redis','TCP','تخزين مؤقت في الذاكرة'],[8080,'HTTP Alt','TCP','منفذ بديل للويب والوكلاء']
+];
+function renderPorts(q = '') {
+  q = q.trim().toLowerCase();
+  const rows = ports.filter(p => !q || p.join(' ').toLowerCase().includes(q));
+  $('#portBody').innerHTML = rows.map(p => `<tr><td class="font-mono text-neon font-semibold">${p[0]}</td><td class="font-semibold">${p[1]}</td><td class="font-mono text-slate-400">${p[2]}</td><td class="text-slate-300">${p[3]}</td><td><button class="btn btn-ghost rounded px-2 py-1 text-xs cp" data-v="${p[1]} - ${p[0]}/${p[2]}">نسخ</button></td></tr>`).join('');
+  $('#portEmpty').classList.toggle('hidden', rows.length > 0);
+}
+$('#portQ').addEventListener('input', e => renderPorts(e.target.value)); renderPorts();
+$('#portBody').addEventListener('click', async e => {
+  const b = e.target.closest('.cp'); if (!b) return;
+  try { await navigator.clipboard.writeText(b.dataset.v); toast('تم نسخ: ' + b.dataset.v); } catch { toast('تعذر النسخ', 'err'); }
+});
+
+/* ---------- Sandbox terminal (simulated) ---------- */
+const out = $('#termOut'), tin = $('#termIn'), hist = [], vars = {}; let hi = 0;
+const print = (t, cls = '') => { const d = document.createElement('div'); if (cls) d.className = cls; d.textContent = t; out.appendChild(d); out.scrollTop = out.scrollHeight; };
+const hash = s => [...s].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
+const fakeIp = h => `${(h % 200) + 20}.${(h >> 3) % 250}.${(h >> 6) % 250}.${(h >> 9) % 250 + 1}`;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function evalPy(expr) {
+  expr = expr.trim();
+  if (!/^[\w\s+\-*/%().,"'<>=!\[\]]+$/.test(expr)) throw new Error('تعبير غير مدعوم');
+  const js = expr.replace(/\bTrue\b/g, 'true').replace(/\bFalse\b/g, 'false').replace(/\band\b/g, '&&').replace(/\bor\b/g, '||').replace(/\bnot\b/g, '!').replace(/\blen\(/g, 'len(').replace(/\/\//g, '/');
+  const names = Object.keys(vars);
+  const v = new Function(...names, 'len', 'str', 'int', 'abs', 'max', 'min', `"use strict"; return (${js});`)(...names.map(n => vars[n]), x => x.length, String, x => Math.trunc(+x), Math.abs, Math.max, Math.min);
+  return v;
+}
+const fmtPy = v => typeof v === 'boolean' ? (v ? 'True' : 'False') : Array.isArray(v) ? '[' + v.map(x => typeof x === 'string' ? `'${x}'` : x).join(', ') + ']' : String(v);
+const cmds = {
+  help: () => print('الأوامر المتاحة:\n  ping <host>        اختبار الاتصال\n  nslookup <host>    استعلام DNS\n  traceroute <host>  تتبع المسار\n  ipconfig           معلومات الواجهة\n  port <رقم|اسم>     بحث في المنافذ\n  whoami, date, clear\n  python: print("hi") أو x = 5 ثم print(x * 2)', 'text-slate-300'),
+  clear: () => { out.innerHTML = ''; },
+  whoami: () => print('enghub-engineer'),
+  date: () => print(new Date().toString()),
+  ipconfig: () => print('eth0: flags=UP,RUNNING\n  inet 192.168.1.23  netmask 255.255.255.0  gateway 192.168.1.1\n  ether 02:42:ac:11:00:02'),
+  async ping(a) {
+    if (!a) return print('الاستخدام: ping <host>', 'text-red-300');
+    const ip = fakeIp(hash(a)); print(`PING ${a} (${ip}) 56 bytes of data.`);
+    let t = []; for (let i = 0; i < 4; i++) { await sleep(450); const ms = 8 + (hash(a + i) % 40); t.push(ms); print(`64 bytes from ${ip}: icmp_seq=${i + 1} ttl=57 time=${ms} ms`); }
+    print(`--- ${a} ping statistics ---\n4 packets transmitted, 4 received, 0% packet loss\nrtt min/avg/max = ${Math.min(...t)}/${(t.reduce((x, y) => x + y) / 4).toFixed(1)}/${Math.max(...t)} ms`);
+  },
+  nslookup(a) { if (!a) return print('الاستخدام: nslookup <host>', 'text-red-300'); print(`Server:  192.168.1.1\nAddress: 192.168.1.1#53\n\nNon-authoritative answer:\nName:    ${a}\nAddress: ${fakeIp(hash(a))}`); },
+  async traceroute(a) {
+    if (!a) return print('الاستخدام: traceroute <host>', 'text-red-300');
+    print(`traceroute to ${a} (${fakeIp(hash(a))}), 30 hops max`); const n = 5 + hash(a) % 3;
+    for (let i = 1; i <= n; i++) { await sleep(350); print(` ${i}  ${i === 1 ? '192.168.1.1' : fakeIp(hash(a + i))}  ${(i * 3 + hash(a + i) % 9)} ms`); }
+  },
+  port(a) { if (!a) return print('الاستخدام: port <رقم|اسم>', 'text-red-300'); const r = ports.filter(p => p.join(' ').toLowerCase().includes(a.toLowerCase())); print(r.length ? r.map(p => `${p[0]}/${p[2]}  ${p[1]} — ${p[3]}`).join('\n') : 'لا توجد نتائج'); }
+};
+async function run(line) {
+  print('$ ' + line, 'text-neon');
+  const [c, ...rest] = line.split(/\s+/), arg = rest.join(' ');
+  try {
+    if (cmds[c]) return await cmds[c](arg);
+    let m;
+    if ((m = line.match(/^print\((.*)\)$/))) return print(m[1].split(/,(?=(?:[^"']*["'][^"']*["'])*[^"']*$)/).map(x => fmtPy(evalPy(x))).join(' '));
+    if ((m = line.match(/^([A-Za-z_]\w*)\s*=\s*(.+)$/)) && !/^=/.test(m[2])) { vars[m[1]] = evalPy(m[2]); return; }
+    if (/^[\w\s+\-*/%().,"'<>=!\[\]]+$/.test(line) && !/^[a-z]+\s+\w+$/i.test(line)) return print(fmtPy(evalPy(line)));
+    print(`bash: ${c}: command not found — اكتب help`, 'text-red-300');
+  } catch (e) { print('Error: ' + (e.message || 'تعبير غير صالح'), 'text-red-300'); }
+}
+let busy = false;
+tin.addEventListener('keydown', async e => {
+  if (e.key === 'ArrowUp') { if (hi > 0) tin.value = hist[--hi]; e.preventDefault(); }
+  else if (e.key === 'ArrowDown') { tin.value = hi < hist.length - 1 ? hist[++hi] : ''; hi = Math.min(hi + 1, hist.length); e.preventDefault(); }
+  else if (e.key === 'Enter') {
+    const v = tin.value.trim(); if (!v || busy) return;
+    hist.push(v); hi = hist.length; tin.value = ''; busy = true; await run(v); busy = false;
+  }
+});
+$('#termBox').addEventListener('click', () => tin.focus());
+$('#clearTerm').addEventListener('click', () => { out.innerHTML = ''; toast('تم مسح الطرفية'); });
+print('EngHub Sandbox v1.0 — محاكاة تعليمية، لا يتم أي اتصال حقيقي.\nاكتب help للبدء.', 'text-slate-400');
+
+/* ---------- Rights, legal & notice ---------- */
+document.querySelectorAll('[data-owner]').forEach(n => n.textContent = CONFIG.owner);
+document.querySelectorAll('[data-year]').forEach(n => n.textContent = CONFIG.year);
+document.querySelectorAll('[data-email]').forEach(n => { n.textContent = CONFIG.email; n.href = 'mailto:' + CONFIG.email; });
+$('meta[name=author]').content = CONFIG.owner;
+const dlg = $('#legal');
+function showLegal(id) {
+  dlg.querySelectorAll('[data-pane]').forEach(p => p.classList.toggle('hidden', p.dataset.pane !== id));
+  dlg.querySelectorAll('[data-tab]').forEach(t => t.classList.toggle('text-neon', t.dataset.tab === id));
+}
+document.querySelectorAll('[data-legal]').forEach(b => b.addEventListener('click', () => { showLegal(b.dataset.legal); dlg.showModal(); }));
+dlg.querySelectorAll('[data-tab]').forEach(t => t.addEventListener('click', () => showLegal(t.dataset.tab)));
+$('#closeLegal').addEventListener('click', () => dlg.close());
+dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+try { if (!localStorage.getItem('enghub_notice')) $('#notice').classList.remove('hidden'); } catch {}
+$('#noticeOk').addEventListener('click', () => { try { localStorage.setItem('enghub_notice', '1'); } catch {} $('#notice').classList.add('hidden'); });
+</script>
+</body>
+</html>
