@@ -10,6 +10,8 @@
 <title>EngHub | منصة مهندسي الحاسب والشبكات</title>
 <meta name="description" content="EngHub: مجتمع وأدوات لمهندسي الحاسب والشبكات. حاسبة Subnet/CIDR، زمن نقل الملفات، مرجع المنافذ، وطرفية محاكاة.">
 <meta name="author" content="ENG.MOHAMMED">
+<meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="robots" content="index,follow">
 <meta name="theme-color" content="#050a12">
 <meta property="og:type" content="website">
@@ -221,8 +223,8 @@ tailwind.config = { theme: { extend: {
     </div>
     <div data-pane="privacy" class="hidden">
       <h3 class="font-bold text-lg mb-2">سياسة الخصوصية</h3>
-      <p>لا يرسل هذا الموقع بياناتك إلى أي خادم. المشاركات والتعليقات والإعجابات تُحفظ في التخزين المحلي (localStorage) لمتصفحك على جهازك فقط، ويمكنك حذفها بحذف مشاركاتك أو مسح بيانات الموقع من المتصفح.</p>
-      <p class="mt-2">لا نستخدم ملفات تتبع أو إعلانات. يحمّل الموقع خط Cairo من Google Fonts ومكتبة Tailwind من شبكة CDN، وقد تسجّل هذه الجهات عنوان IP وفق سياساتها الخاصة.</p>
+      <p>ما تنشره في المجتمع (الاسم الذي تكتبه ونص المشاركة والتعليقات والإعجابات) يُحفظ في قاعدة بيانات Google Firebase Firestore ويظهر علناً لجميع الزوار، فلا تنشر معلومات شخصية أو سرية. لطلب إزالة مشاركة راسلنا على البريد أدناه. يُنشأ لك معرّف مجهول (Firebase Anonymous Auth) لمنع الإساءة وتكرار الإعجابات، ولا يرتبط باسمك أو بريدك.</p>
+      <p class="mt-2">لا نستخدم ملفات تتبع أو إعلانات. يحمّل الموقع خط Cairo من Google Fonts ومكتبة Tailwind من شبكة CDN، وخدمة Firebase من Google، وقد تسجّل هذه الجهات عنوان IP وفق سياساتها الخاصة.</p>
       <p class="mt-2">للاستفسار أو طلب أي إجراء يخص خصوصيتك راسلنا على البريد المذكور أسفل الصفحة.</p>
     </div>
     <div data-pane="copyright" class="hidden">
@@ -235,7 +237,7 @@ tailwind.config = { theme: { extend: {
 </dialog>
 
 <div id="notice" class="hidden fixed bottom-5 right-5 z-50 card p-4 max-w-sm text-sm flex items-center gap-3">
-  <span>يحفظ الموقع مشاركاتك على جهازك فقط (تخزين محلي) ولا يتتبّعك.</span>
+  <span>مشاركاتك في المجتمع علنية وتُحفظ في قاعدة بيانات Google Firebase. لا نستخدم تتبعاً إعلانياً.</span>
   <button id="noticeOk" class="btn btn-primary rounded-lg px-4 py-1.5 shrink-0">حسناً</button>
 </div>
 
@@ -244,6 +246,7 @@ tailwind.config = { theme: { extend: {
 <script>
 /* ===== إعدادات المالك: عدّلها هنا فقط ===== */
 const CONFIG = { owner: 'ENG.MOHAMMED', email: 'mohammed.dgrii@gmail.com', year: new Date().getFullYear() };
+try { if (window.top !== window.self) window.top.location = window.self.location; } catch { document.documentElement.style.display = 'none'; }
 const $ = (s, r=document) => r.querySelector(s);
 const esc = s => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
@@ -290,9 +293,13 @@ const SEEDS = [
 ].map(p => ({...p, sample:true}));
 const KEY = 'enghub_posts_v1'; let posts = null, lastPost = 0;
 try { posts = JSON.parse(localStorage.getItem(KEY)); } catch {}
-if (!Array.isArray(posts)) posts = SEEDS;
+const okPost = p => p && typeof p.name === 'string' && typeof p.text === 'string' && typeof p.likes === 'number' && Array.isArray(p.comments);
+posts = Array.isArray(posts) ? posts.filter(okPost) : SEEDS;
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(posts)); } catch {} };
 const updateCount = () => { lc.textContent = posts.length.toLocaleString('en'); };
+let FB = null, pendingRender = false; const openIds = new Set();
+let likedSet = new Set(); try { likedSet = new Set(JSON.parse(localStorage.getItem('enghub_liked') || '[]')); } catch {}
+const saveLiked = () => { try { localStorage.setItem('enghub_liked', JSON.stringify([...likedSet])); } catch {} };
 function burst(x, y) {
   const colors = ['#22d3ee','#34f5a0','#ffffff'];
   for (let i = 0; i < 16; i++) {
@@ -318,8 +325,9 @@ function renderPost(p, i, animate) {
       </button>
       <button class="btn btn-ghost rounded-lg px-3 py-1.5 text-sm tg">💬 تعليق <span class="font-mono">(${p.comments.length})</span></button>
       ${p.mine ? '<button class="btn btn-ghost rounded-lg px-3 py-1.5 text-sm del text-red-300">حذف</button>' : ''}
+      ${p.id ? `<a class="btn btn-ghost rounded-lg px-3 py-1.5 text-sm text-slate-400" href="mailto:${CONFIG.email}?subject=${encodeURIComponent('بلاغ عن مشاركة ' + p.id)}">إبلاغ</a>` : ''}
     </div>
-    <div class="cm hidden mt-4 space-y-2">
+    <div class="cm ${openIds.has(p.id) ? '' : 'hidden'} mt-4 space-y-2">
       <div class="list space-y-2"></div>
       <div class="flex gap-2"><input class="field text-sm" placeholder="اكتب تعليقاً" maxlength="200"><button class="btn btn-primary rounded-lg px-4 text-sm send">إرسال</button></div>
     </div>`;
@@ -328,11 +336,12 @@ function renderPost(p, i, animate) {
   p.comments.forEach(addC);
   $('.like', el).addEventListener('click', e => {
     p.liked = !p.liked; p.likes += p.liked ? 1 : -1; save();
+    if (FB && p.id) { p.liked ? likedSet.add(p.id) : likedSet.delete(p.id); saveLiked(); FB.like(p.id, p.liked ? 1 : -1).catch(() => toast('تعذر تسجيل الإعجاب', 'err')); }
     $('.cnt', el).textContent = p.likes; $('.heart', el).textContent = p.liked ? '❤️' : '🤍';
     e.currentTarget.setAttribute('aria-pressed', p.liked);
     if (p.liked) { const r = $('.heart', el).getBoundingClientRect(); burst(r.left + r.width/2, r.top + r.height/2); toast('أعجبك المنشور'); }
   });
-  $('.tg', el).addEventListener('click', () => $('.cm', el).classList.toggle('hidden'));
+  $('.tg', el).addEventListener('click', () => { const h = $('.cm', el).classList.toggle('hidden'); h ? openIds.delete(p.id) : openIds.add(p.id); });
   const del = $('.del', el);
   if (del) del.addEventListener('click', () => { posts.splice(posts.indexOf(p), 1); save(); updateCount(); el.remove(); toast('تم حذف مشاركتك'); });
   const input = $('.cm input', el);
@@ -340,21 +349,50 @@ function renderPost(p, i, animate) {
     const v = input.value.trim();
     if (!v) return toast('اكتب نص التعليق أولاً', 'err');
     p.comments.push(v); save(); addC(v); input.value = '';
+    if (FB && p.id) FB.comment(p.id, v).catch(() => toast('تعذر إرسال التعليق', 'err'));
     $('.tg span', el).textContent = `(${p.comments.length})`; toast('تمت إضافة تعليقك');
   };
   $('.send', el).addEventListener('click', send);
   input.addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
   return el;
 }
-posts.forEach((p, i) => $('#feed').appendChild(renderPost(p, i, false)));
-updateCount();
+function renderFeed() {
+  const f = $('#feed'); f.innerHTML = '';
+  if (!posts.length) f.innerHTML = '<p class="card p-6 text-center text-slate-400">لا توجد مشاركات بعد. كن أول من ينشر فكرة!</p>';
+  posts.forEach((p, i) => f.appendChild(renderPost(p, i, false)));
+  updateCount();
+}
+renderFeed();
+function useFirebase(api) {
+  FB = api; posts = []; renderFeed();
+  api.listen(list => {
+    posts = list.map(d => ({id: d.id, name: String(d.name || ''), type: String(d.type || ''), text: String(d.text || ''), likes: Math.max(0, Number(d.likes) || 0), comments: Array.isArray(d.comments) ? d.comments.map(String) : [], liked: likedSet.has(d.id)})).filter(p => p.name && p.text);
+    const ae = document.activeElement;
+    if (ae && ae.tagName === 'INPUT' && ae.value && ae.closest('#feed')) { pendingRender = true; return; }
+    renderFeed();
+  }, () => {
+    FB = null; toast('تعذر الاتصال بقاعدة البيانات، يعمل الموقع محلياً', 'err');
+    try { const a = JSON.parse(localStorage.getItem(KEY)); posts = Array.isArray(a) ? a : SEEDS; } catch { posts = SEEDS; }
+    renderFeed();
+  });
+}
+$('#feed').addEventListener('focusout', () => { if (pendingRender) { pendingRender = false; setTimeout(renderFeed, 150); } });
+if (window.__fb) useFirebase(window.__fb); else window.addEventListener('fb-ready', e => useFirebase(e.detail), {once:true});
 $('#postForm').addEventListener('submit', e => {
   e.preventDefault();
-  const name = $('#pName').value.trim(), text = $('#pText').value.trim();
+  const clean = v => v.replace(/[\u0000-\u0008\u000B-\u001F\u007F\u200B-\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim();
+  const name = clean($('#pName').value), text = clean($('#pText').value).replace(/\n{3,}/g, '\n\n');
   if (!name || !text) return toast('الاسم والنص مطلوبان', 'err');
+  if (/eng.?mohammed/i.test(name)) return toast('هذا الاسم محجوز لمالك الموقع', 'err');
   if (Date.now() - lastPost < 15000) return toast('انتظر ثوانٍ قبل نشر مشاركة أخرى', 'err');
   lastPost = Date.now();
   const p = {name, type:$('#pType').value, text, likes:0, comments:[], liked:false, mine:true};
+  if (FB) {
+    FB.add({name, type:$('#pType').value, text})
+      .then(() => { $('#pText').value = ''; toast('تم إرسال فكرتك للمجتمع'); })
+      .catch(() => { lastPost = 0; toast('تعذر النشر، حاول مرة أخرى', 'err'); });
+    return;
+  }
   posts.unshift(p); save(); updateCount(); $('#feed').prepend(renderPost(p, 0, true));
   $('#pText').value = ''; toast('تم إرسال فكرتك للمجتمع');
 });
@@ -431,17 +469,41 @@ $('#portBody').addEventListener('click', async e => {
 });
 
 /* ---------- Sandbox terminal (simulated) ---------- */
-const out = $('#termOut'), tin = $('#termIn'), hist = [], vars = {}; let hi = 0;
-const print = (t, cls = '') => { const d = document.createElement('div'); if (cls) d.className = cls; d.textContent = t; out.appendChild(d); out.scrollTop = out.scrollHeight; };
+const out = $('#termOut'), tin = $('#termIn'), hist = [], vars = Object.create(null); let hi = 0;
+const print = (t, cls = '') => { const d = document.createElement('div'); if (cls) d.className = cls; d.textContent = t; out.appendChild(d); while (out.childElementCount > 300) out.firstChild.remove(); out.scrollTop = out.scrollHeight; };
 const hash = s => [...s].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
 const fakeIp = h => `${(h % 200) + 20}.${(h >> 3) % 250}.${(h >> 6) % 250}.${(h >> 9) % 250 + 1}`;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-function evalPy(expr) {
-  expr = expr.trim();
-  if (!/^[\w\s+\-*/%().,"'<>=!\[\]]+$/.test(expr)) throw new Error('تعبير غير مدعوم');
-  const js = expr.replace(/\bTrue\b/g, 'true').replace(/\bFalse\b/g, 'false').replace(/\band\b/g, '&&').replace(/\bor\b/g, '||').replace(/\bnot\b/g, '!').replace(/\blen\(/g, 'len(').replace(/\/\//g, '/');
-  const names = Object.keys(vars);
-  const v = new Function(...names, 'len', 'str', 'int', 'abs', 'max', 'min', `"use strict"; return (${js});`)(...names.map(n => vars[n]), x => x.length, String, x => Math.trunc(+x), Math.abs, Math.max, Math.min);
+function evalPy(src) {
+  src = src.trim();
+  const re = /\s*(?:(\d+(?:\.\d+)?)|("[^"]*"|'[^']*')|([A-Za-z_]\w*)|(\*\*|\/\/|[=!<>]=|[-+*\/%()<>,\[\]]))/y;
+  const toks = []; let pos = 0, m;
+  while (pos < src.length) {
+    re.lastIndex = pos; m = re.exec(src);
+    if (!m) throw new Error('رمز غير مدعوم قرب: ' + src.slice(pos, pos + 8));
+    toks.push(m[1] !== undefined ? {n:+m[1]} : m[2] ? {s:m[2].slice(1, -1)} : m[3] ? {id:m[3]} : {op:m[4]}); pos = re.lastIndex;
+  }
+  let i = 0; const peek = () => toks[i], isOp = o => peek() && peek().op === o;
+  const fns = {len:x => x.length, str:String, int:x => Math.trunc(+x), abs:Math.abs, max:Math.max, min:Math.min};
+  const list = close => { const a = []; while (!isOp(close)) { a.push(cmp()); if (isOp(',')) i++; else if (!isOp(close)) throw new Error('صيغة غير صالحة'); } i++; return a; };
+  const atom = () => {
+    const t = toks[i++]; if (!t) throw new Error('تعبير ناقص');
+    if (t.n !== undefined) return t.n; if (t.s !== undefined) return t.s;
+    if (t.id) {
+      if (t.id === 'True') return true; if (t.id === 'False') return false;
+      if (isOp('(')) { i++; if (!Object.hasOwn(fns, t.id)) throw new Error('الدالة غير معرّفة: ' + t.id); return fns[t.id](...list(')')); }
+      if (!Object.hasOwn(vars, t.id)) throw new Error('المتغير غير معرّف: ' + t.id); return vars[t.id];
+    }
+    if (t.op === '(') { const v = cmp(); if (!isOp(')')) throw new Error('قوس غير مغلق'); i++; return v; }
+    if (t.op === '[') return list(']');
+    throw new Error('رمز غير متوقع');
+  };
+  const unary = () => isOp('-') ? (i++, -unary()) : pow();
+  const pow = () => { const a = atom(); if (isOp('**')) { i++; return a ** unary(); } return a; };
+  const mul = () => { let a = unary(); while (['*','/','//','%'].includes(peek()?.op)) { const o = toks[i++].op, b = unary(); a = o === '*' ? a * b : o === '/' ? a / b : o === '//' ? Math.floor(a / b) : a % b; } return a; };
+  const add = () => { let a = mul(); while (isOp('+') || isOp('-')) { const o = toks[i++].op, b = mul(); a = o === '+' ? a + b : a - b; } return a; };
+  const cmp = () => { let a = add(); while (['==','!=','<','>','<=','>='].includes(peek()?.op)) { const o = toks[i++].op, b = add(); a = o === '==' ? a === b : o === '!=' ? a !== b : o === '<' ? a < b : o === '>' ? a > b : o === '<=' ? a <= b : a >= b; } return a; };
+  const v = cmp(); if (i < toks.length) throw new Error('تعبير غير صالح');
   return v;
 }
 const fmtPy = v => typeof v === 'boolean' ? (v ? 'True' : 'False') : Array.isArray(v) ? '[' + v.map(x => typeof x === 'string' ? `'${x}'` : x).join(', ') + ']' : String(v);
@@ -469,7 +531,7 @@ async function run(line) {
   print('$ ' + line, 'text-neon');
   const [c, ...rest] = line.split(/\s+/), arg = rest.join(' ');
   try {
-    if (cmds[c]) return await cmds[c](arg);
+    if (Object.hasOwn(cmds, c)) return await cmds[c](arg);
     let m;
     if ((m = line.match(/^print\((.*)\)$/))) return print(m[1].split(/,(?=(?:[^"']*["'][^"']*["'])*[^"']*$)/).map(x => fmtPy(evalPy(x))).join(' '));
     if ((m = line.match(/^([A-Za-z_]\w*)\s*=\s*(.+)$/)) && !/^=/.test(m[2])) { vars[m[1]] = evalPy(m[2]); return; }
@@ -480,7 +542,7 @@ async function run(line) {
 let busy = false;
 tin.addEventListener('keydown', async e => {
   if (e.key === 'ArrowUp') { if (hi > 0) tin.value = hist[--hi]; e.preventDefault(); }
-  else if (e.key === 'ArrowDown') { tin.value = hi < hist.length - 1 ? hist[++hi] : ''; hi = Math.min(hi + 1, hist.length); e.preventDefault(); }
+  else if (e.key === 'ArrowDown') { if (hi < hist.length - 1) { hi++; tin.value = hist[hi]; } else { hi = hist.length; tin.value = ''; } e.preventDefault(); }
   else if (e.key === 'Enter') {
     const v = tin.value.trim(); if (!v || busy) return;
     hist.push(v); hi = hist.length; tin.value = ''; busy = true; await run(v); busy = false;
@@ -506,6 +568,44 @@ $('#closeLegal').addEventListener('click', () => dlg.close());
 dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
 try { if (!localStorage.getItem('enghub_notice')) $('#notice').classList.remove('hidden'); } catch {}
 $('#noticeOk').addEventListener('click', () => { try { localStorage.setItem('enghub_notice', '1'); } catch {} $('#notice').classList.add('hidden'); });
+</script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
+import { getFirestore, collection, doc, writeBatch, increment, arrayUnion, updateDoc, query, orderBy, limit, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCqmOcV6ce4zwTiEff04zHMLfb1gwNX1xw",
+  authDomain: "enghup-7be43.firebaseapp.com",
+  projectId: "enghup-7be43",
+  storageBucket: "enghup-7be43.firebasestorage.app",
+  messagingSenderId: "578354933032",
+  appId: "1:578354933032:web:c2ce7b6e6d6ad33d82741d"
+};
+
+const app = initializeApp(firebaseConfig), auth = getAuth(app), db = getFirestore(app), col = collection(db, 'posts');
+const ready = new Promise((res, rej) => { onAuthStateChanged(auth, u => u && res(u)); signInAnonymously(auth).catch(rej); });
+ready.catch(() => {});
+
+const api = {
+  async add(d) {
+    const u = await ready, b = writeBatch(db);
+    b.set(doc(col), {name: d.name, type: d.type, text: d.text, uid: u.uid, likes: 0, comments: [], createdAt: serverTimestamp()});
+    b.set(doc(db, 'users', u.uid), {lastPost: serverTimestamp()});
+    return b.commit();
+  },
+  async like(id, n) {
+    const u = await ready, b = writeBatch(db), lr = doc(db, 'posts', id, 'likes', u.uid);
+    n > 0 ? b.set(lr, {t: serverTimestamp()}) : b.delete(lr);
+    b.update(doc(db, 'posts', id), {likes: increment(n)});
+    return b.commit();
+  },
+  async comment(id, t) { await ready; return updateDoc(doc(db, 'posts', id), {comments: arrayUnion(t)}); },
+  listen: (ok, err) => onSnapshot(query(col, orderBy('createdAt', 'desc'), limit(100)),
+    snap => ok(snap.docs.map(d => ({id: d.id, ...d.data({serverTimestamps: 'estimate'})}))), err)
+};
+window.__fb = api;
+window.dispatchEvent(new CustomEvent('fb-ready', {detail: api}));
 </script>
 </body>
 </html>
